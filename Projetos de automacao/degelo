@@ -1,0 +1,527 @@
+(* Projeto : Degelo para câmaras de estocagens
+Autor : Tiago Alves
+Data : 11/08/2022
+Empresa : SEVENTECH Solucções em Automação
+Descrição : Processo de Degelo para câmaras de estocagens, com 3 tempos de acionamentos determinado pelo operador,
+o processo pode ser inicializado
+via tempo/dia ou pode ser ligado manualmente pelo Operador.
+
+*)
+REGION _DTL IHM_
+    // Statement section REGION
+    // Saida para Visualização em IHMs
+    #DTL.YEAR := #WR_LOC_T.YEAR;
+    #DTL.MONTH := #WR_LOC_T.MONTH;
+    #DTL.DAY := #WR_LOC_T.DAY;
+    #DTL.WEEKDAY := #WR_LOC_T.WEEKDAY;
+    #DTL.HOUR := #WR_LOC_T.HOUR;
+    #DTL.MINUTE := #WR_LOC_T.MINUTE;
+   
+END_REGION
+REGION _read system time_
+    #tempInt := RD_SYS_T(#DTL);
+    IF #tempInt <> 0 THEN
+        #tempIntError := #tempIntError OR #ERR_RDSYST;
+    END_IF;
+    
+END_REGION
+REGION Cams1
+    
+    IF #Processo."Manual/Automatico" AND #Processo."Cams__1" THEN
+        IF ((#Processo."Monday-1" AND  #DTL.WEEKDAY  = 2)
+            OR (#Processo."Tuesday-1" AND #DTL.WEEKDAY = 3)
+            OR (#Processo."Wednesday-1" AND #DTL.WEEKDAY = 4)
+            OR (#Processo."Thursday-1" AND #DTL.WEEKDAY = 5)
+            OR (#Processo."Friday-1" AND #DTL.WEEKDAY = 6)
+            OR (#Processo."Saturday-1" AND #DTL.WEEKDAY = 7)
+            OR (#Processo."Sunday-1" AND #DTL.WEEKDAY = 1))
+            AND ( #WR_LOC_T.HOUR = #Processo.On_Time_1 AND #WR_LOC_T.MINUTE  = #Processo.On_Minutes_1) THEN
+            
+            #"Processo de Degelo Cams 1" := 1;
+            
+        ELSE
+            #"Processo de Degelo Cams 1" := 0;
+            
+        END_IF;
+        
+    END_IF;
+    
+    
+END_REGION
+REGION Cams2
+    
+    IF #Processo."Manual/Automatico" AND #Processo."Cams__2" THEN
+        IF ((#Processo."Monday-2" AND #DTL.WEEKDAY = 2)
+            OR (#Processo."Tuesday-2" AND #DTL.WEEKDAY = 3)
+            OR (#Processo."Wednesday-2" AND #DTL.WEEKDAY = 4)
+            OR (#Processo."Thursday-2" AND #DTL.WEEKDAY = 5)
+            OR (#Processo."Friday-2" AND #DTL.WEEKDAY = 6)
+            OR (#Processo."Saturday-2" AND #DTL.WEEKDAY = 7)
+            OR (#Processo."Sunday-2" AND #DTL.WEEKDAY = 1))
+            AND ( #WR_LOC_T.HOUR = #Processo.On_Time_2 AND #WR_LOC_T.MINUTE  = #Processo.On_Minutes_2  ) THEN
+            
+            #"Processo de Degelo Cams 2" := 1;
+            
+        ELSE
+            #"Processo de Degelo Cams 2" := 0;
+            
+        END_IF;
+        
+    END_IF;
+    
+    
+END_REGION
+REGION Cams3
+    
+    IF #Processo."Manual/Automatico" AND #Processo."Cams__3" THEN
+        IF ((#Processo."Monday-3" AND #DTL.WEEKDAY = 2)
+            OR (#Processo."Tuesday-3" AND #DTL.WEEKDAY = 3)
+            OR (#Processo."Wednesday-3" AND #DTL.WEEKDAY = 4)
+            OR (#Processo."Thursday-3" AND #DTL.WEEKDAY = 5)
+            OR (#Processo."Friday-3" AND #DTL.WEEKDAY = 6)
+            OR (#Processo."Saturday-3" AND #DTL.WEEKDAY = 7)
+            OR (#Processo."Sunday-3" AND #DTL.WEEKDAY = 1))
+            AND ( #WR_LOC_T.HOUR = #Processo.On_Time_3  AND #WR_LOC_T.MINUTE  = #Processo.On_Minutes_3  ) THEN
+            
+            #"Processo de Degelo Cams 3" := 1;
+            
+        ELSE
+            #"Processo de Degelo Cams 3" := 0;
+            
+        END_IF;
+    END_IF;
+END_REGION
+REGION Processo de acionamento se estiver em Automático
+    IF #Processo."Manual/Automatico" AND (#"Processo de Degelo Cams 1" OR #"Processo de Degelo Cams 2" OR #"Processo de Degelo Cams 3")  THEN
+        #Processo.Defrost_in_Process := 1;
+    ELSE
+        #Processo.Defrost_in_Process := 0;
+    END_IF;
+
+    
+END_REGION
+REGION Sistema de Degelo em Modo Automático 
+    IF #Processo."Manual/Automatico" THEN
+        #"contador pulso iniciar"(CU := #Processo.Defrost_in_Process,
+                                  R := #"Inicializa  Vazio" OR #"Stop Manual",
+                                  PV := 1,
+                                  Q => #"Memoria de iniciar",
+                                  CV => #"valor contador-6");
+        
+        
+        
+        
+        #"contador de pulso-01"(CU := #"Inicializa  Vazio",
+                                R := #"Inicializa Gas quente" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-1",
+                                CV => #"valor contador-01");
+        
+        #"contado de pulso-02"(CU := #"Inicializa Gas quente",
+                               R := #"Inicializa Agua" OR #"Stop Manual",
+                               PV := 1,
+                               Q => #"Memoria-2",
+                               CV => #"valor contador-2");
+        
+        #"contador de pulso-03"(CU := #"Inicializa Agua",
+                                R := #"Inicializa Secagem" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-3",
+                                CV => #"valor contador-3");
+        
+        #"contador de pulso-04"(CU := #"Inicializa Secagem",
+                                R := #"Inicializa Pre Resfriamento" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-4",
+                                CV => #"valor contador-4");
+        
+        
+        
+        IF #Processo.Cooling_alloy_after_defrosting THEN
+            #"contador de pulso Liga refrig-auto"(CU := #"Inicializa Pre Resfriamento",
+                                                  R := #"Stop Manual" OR #"Memoria de iniciar",
+                                                  PV := 1,
+                                                  Q => #"Memoria-6",
+                                                  CV => #"valor contador-6");
+        ELSE
+            ;
+            #"contador de pulso ligaRefrig"(CU := #Processo.Start_Manual_defrosting,
+                                            R := #"Stop Manual" OR #"Memoria de iniciar",
+                                            PV := 1,
+                                            Q => #"Memoria-5",
+                                            CV => #"valor contador-5");
+        END_IF;
+        
+        
+        
+    (*
+    vazio
+    *)
+        #"Tempo de Vazio"(IN := #"Memoria de iniciar",
+                          PT := #Processo.Input_Empty_time * 60000,
+                          Q => #"Inicializa  Vazio",
+                          ET => #Processo.Current_Empty_time);
+        
+        
+        
+    (*
+    Gás quente
+    *)
+        #"Tempo de gas quente"(IN := #"Memoria-1",
+                               PT := #Processo.Input_Time_ofhot_gas * 60000,
+                               Q => #"Inicializa Gas quente",
+                               ET => #Processo.Current_Time_ofhot_gas);
+    (*
+    Água
+    *)
+        #"Tempo de agua"(IN := #"Memoria-2",
+                         PT := #Processo.Input_Water_time * 60000,
+                         Q => #"Inicializa Agua",
+                         ET => #Processo.Current_Water_time);
+    (*   
+    Secagem
+    *)
+        #"Tempo de Secagem"(IN := #"Memoria-3",
+                            PT := #Processo.Input_Drying_time * 60000,
+                            Q => #"Inicializa Secagem",
+                            ET => #Processo.Current_Drying_time);
+    (*
+    Pre-Resfriamento
+    *)
+        #"Tempo de Pre resfriamento"(IN := #"Memoria-4",
+                                     PT := #Processo."Input_Pre-cooling_time" * 60000,
+                                     Q => #"Inicializa Pre Resfriamento",
+                                     ET => #Processo."Current_Pre-cooling_time");
+        
+        
+        // gas quente    //
+        IF #"Memoria-1" THEN
+            #Processo."Output-2" := 1; // gas quente//
+            #"Output-2" := 1;
+            
+            
+            // agua  // 
+        ELSIF #"Memoria-2" THEN
+            #Processo."Output-2" := 1; // gas quente//
+            #"Output-2" := 1;
+            #Processo."Output-3" := 1;//agua//
+            #"Output-3" := 1;
+        ELSE
+            #Processo."Output-2" := 0;
+            #"Output-2" := 0;
+            #Processo."Output-3" := 0;
+            #"Output-3" := 0;
+        END_IF;
+        
+        
+        // secagem     //
+        IF #"Memoria-3" AND NOT #"Memoria-1" AND NOT #"Memoria-2" THEN
+            #Processo."Output-5" := 1;
+            #"Output-5" := 1;
+            
+            
+            // pre resfriamento  //  
+        ELSIF #"Memoria-4" THEN
+            #Processo."Output-1" := 1; // liquido //
+            #"Output-1" := 1;
+            #Processo."Output-5" := 1; // Evaporador //
+            #"Output-5" := 1;
+        ELSE
+            #Processo."Output-1" := 0; // liquido //
+            #"Output-1" := 0;
+            #Processo."Output-5" := 0; // Evaporador //
+            #"Output-5" := 0;
+        END_IF;
+        
+        // processo de acionamento da valvula de liquido automatico//
+        IF #Processo.Liquid_valve_Manu_Auto THEN
+            
+            #Processo.Liquid_valve_Running := 1;
+        ELSE
+            #Processo.Liquid_valve_Running := 0;
+        END_IF;
+        // processo de acionamento da valvula de liquido manual //
+        IF #Processo.Liquid_valve_Running = 0 AND #Processo."Liquid_valve_Start/Stop" AND NOT #Out_Defrostinprocess THEN
+            #Processo."Output-1" := 1; // liquido //
+            #"Output-1" := 1;
+        END_IF;
+        
+        // condição de acionamento da Refrigeração cem a necessidade do operador Startar //
+        IF #Processo.Cooling_alloy_after_defrosting THEN
+            IF #"Memoria-6" AND #Processo.Liquid_valve_Running AND (#Processo.Liquid_valve_Setpoint <= #"Room temperature") THEN
+                #Processo."Output-1" := 1; // liquido //
+                #"Output-1" := 1;
+            END_IF;
+            // resfriamento//   
+            IF #"Memoria-6" THEN
+                #Processo."Output-5" := 1; // Evaporador //
+                #"Output-5" := 1;
+            END_IF;
+        END_IF;
+        
+        // condição de acionamento da Refrigeração com a necessidade do operador Startar //
+        IF #Processo.Cooling_alloy_after_defrosting = 0 THEN
+            IF #"Memoria-5" AND #Processo.Liquid_valve_Running AND (#Processo.Liquid_valve_Setpoint <= #"Room temperature") THEN
+                #Processo."Output-1" := 1; // liquido //
+                #"Output-1" := 1;
+            END_IF;
+            // resfriamento//   
+            IF #"Memoria-5" THEN
+                #Processo."Output-5" := 1; // Evaporador //
+                #"Output-5" := 1;
+            END_IF;
+        END_IF;
+        
+        //Processo de visualização inicializado //
+        IF #"Memoria de iniciar" OR #"Memoria-1" OR #"Memoria-2" OR #"Memoria-3" OR #"Memoria-4" THEN
+            #Processo.Defrost_in_Process := 1;
+        ELSE
+            #Processo.Defrost_in_Process := 0;
+        END_IF;
+        IF #Processo."Output-5" THEN
+            #Fan_rotation := "Clock_1Hz";
+            ;
+        END_IF;
+        
+    END_IF;
+    
+    
+END_REGION
+REGION Sistema de Degelo em Modo Manual
+    IF NOT #Processo."Manual/Automatico" THEN
+        #"contador pulso iniciar"(CU := #Processo.Start_Manual,
+                                  R := #"Inicializa  Vazio" OR #"Stop Manual",
+                                  PV := 1,
+                                  Q => #"Memoria de iniciar",
+                                  CV => #"valor contador-6");
+        
+        
+        
+        
+        #"contador de pulso-01"(CU := #"Inicializa  Vazio",
+                                R := #"Inicializa Gas quente" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-1",
+                                CV => #"valor contador-01");
+        
+        #"contado de pulso-02"(CU := #"Inicializa Gas quente",
+                               R := #"Inicializa Agua" OR #"Stop Manual",
+                               PV := 1,
+                               Q => #"Memoria-2",
+                               CV => #"valor contador-2");
+        
+        #"contador de pulso-03"(CU := #"Inicializa Agua",
+                                R := #"Inicializa Secagem" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-3",
+                                CV => #"valor contador-3");
+        
+        #"contador de pulso-04"(CU := #"Inicializa Secagem",
+                                R := #"Inicializa Pre Resfriamento" OR #"Stop Manual",
+                                PV := 1,
+                                Q => #"Memoria-4",
+                                CV => #"valor contador-4");
+        
+        
+        
+        IF #Processo.Cooling_alloy_after_defrosting THEN
+            #"contador de pulso Liga refrig-auto"(CU := #"Inicializa Pre Resfriamento",
+                                                  R := #"Stop Manual" OR #"Memoria de iniciar",
+                                                  PV := 1,
+                                                  Q => #"Memoria-6",
+                                                  CV => #"valor contador-6");
+        ELSE
+            ;
+            #"contador de pulso ligaRefrig"(CU := #Processo.Start_Manual_defrosting,
+                                            R := #"Stop Manual" OR #"Memoria de iniciar",
+                                            PV := 1,
+                                            Q => #"Memoria-5",
+                                            CV => #"valor contador-5");
+        END_IF;
+        
+        
+        
+    (*
+    vazio
+    *)
+        #"Tempo de Vazio"(IN := #"Memoria de iniciar",
+                          PT := #Processo.Input_Empty_time * 60000,
+                          Q => #"Inicializa  Vazio",
+                          ET => #Processo.Current_Empty_time);
+        
+        
+        
+    (*
+    Gás quente
+    *)
+        #"Tempo de gas quente"(IN := #"Memoria-1",
+                               PT := #Processo.Input_Time_ofhot_gas * 60000,
+                               Q => #"Inicializa Gas quente",
+                               ET => #Processo.Current_Time_ofhot_gas);
+    (*
+    Água
+    *)
+        #"Tempo de agua"(IN := #"Memoria-2",
+                         PT := #Processo.Input_Water_time * 60000,
+                         Q => #"Inicializa Agua",
+                         ET => #Processo.Current_Water_time);
+    (*   
+    Secagem
+    *)
+        #"Tempo de Secagem"(IN := #"Memoria-3",
+                            PT := #Processo.Input_Drying_time * 60000,
+                            Q => #"Inicializa Secagem",
+                            ET => #Processo.Current_Drying_time);
+    (*
+    Pre-Resfriamento
+    *)
+        #"Tempo de Pre resfriamento"(IN := #"Memoria-4",
+                                     PT := #Processo."Input_Pre-cooling_time" * 60000,
+                                     Q => #"Inicializa Pre Resfriamento",
+                                     ET => #Processo."Current_Pre-cooling_time");
+        
+        
+        // gas quente    //
+        IF #"Memoria-1" THEN
+            #Processo."Output-2" := 1; // gas quente//
+            #"Output-2" := 1;
+            
+            
+            // agua  // 
+        ELSIF #"Memoria-2" THEN
+            #Processo."Output-2" := 1; // gas quente//
+            #"Output-2" := 1;
+            #Processo."Output-3" := 1;//agua//
+            #"Output-3" := 1;
+        ELSE
+            #Processo."Output-2" := 0;
+            #"Output-2" := 0;
+            #Processo."Output-3" := 0;
+            #"Output-3" := 0;
+        END_IF;
+        
+        
+        // secagem     //
+        IF #"Memoria-3" AND NOT #"Memoria-1" AND NOT #"Memoria-2" THEN
+            #Processo."Output-5" := 1;
+            #"Output-5" := 1;
+            
+            
+            // pre resfriamento  //  
+        ELSIF #"Memoria-4" THEN
+            #Processo."Output-1" := 1; // liquido //
+            #"Output-1" := 1;
+            #Processo."Output-5" := 1; // Evaporador //
+            #"Output-5" := 1;
+        ELSE
+            #Processo."Output-1" := 0; // liquido //
+            #"Output-1" := 0;
+            #Processo."Output-5" := 0; // Evaporador //
+            #"Output-5" := 0;
+        END_IF;
+        
+        // processo de acionamento da valvula de liquido automatico//
+        IF #Processo.Liquid_valve_Manu_Auto THEN
+            
+            #Processo.Liquid_valve_Running := 1;
+        ELSE
+            #Processo.Liquid_valve_Running := 0;
+        END_IF;
+        // processo de acionamento da valvula de liquido manual //
+        IF #Processo.Liquid_valve_Running = 0 AND #Processo."Liquid_valve_Start/Stop" AND NOT #Out_Defrostinprocess THEN
+            #Processo."Output-1" := 1; // liquido //
+            #"Output-1" := 1;
+        END_IF;
+        
+        // condição de acionamento da Refrigeração cem a necessidade do operador Startar //
+        IF #Processo.Cooling_alloy_after_defrosting THEN
+            IF #"Memoria-6" AND #Processo.Liquid_valve_Running AND (#Processo.Liquid_valve_Setpoint <= #"Room temperature") THEN
+                #Processo."Output-1" := 1; // liquido //
+                #"Output-1" := 1;
+            END_IF;
+            // resfriamento//   
+            IF #"Memoria-6" THEN
+                #Processo."Output-5" := 1; // Evaporador //
+                #"Output-5" := 1;
+            END_IF;
+        END_IF;
+        
+        // condição de acionamento da Refrigeração com a necessidade do operador Startar //
+        IF #Processo.Cooling_alloy_after_defrosting = 0 THEN
+            IF #"Memoria-5" AND #Processo.Liquid_valve_Running AND (#Processo.Liquid_valve_Setpoint <= #"Room temperature") THEN
+                #Processo."Output-1" := 1; // liquido //
+                #"Output-1" := 1;
+            END_IF;
+            // resfriamento//   
+            IF #"Memoria-5" THEN
+                #Processo."Output-5" := 1; // Evaporador //
+                #"Output-5" := 1;
+            END_IF;
+        END_IF;
+        
+        //Processo de visualização inicializado //
+        IF #"Memoria de iniciar" OR #"Memoria-1" OR #"Memoria-2" OR #"Memoria-3" OR #"Memoria-4" THEN
+            #Processo.Defrost_in_Process := 1;
+        ELSE
+            #Processo.Defrost_in_Process := 0;
+        END_IF;
+        IF #Processo."Output-5" THEN
+            #Fan_rotation := "Clock_1Hz";
+            ;
+        END_IF;
+        
+    END_IF;
+    
+    
+    
+END_REGION
+REGION Animação de rotação na PopUp
+    
+    IF #Processo.Defrost_in_Process THEN
+        #"contador animação de rotação"(CU := "Clock_1Hz",
+                                        R := #"Reset contador Rotação-PopUp",
+                                        PV := 4,
+                                        Q => #"Reset contador Rotação-PopUp",
+                                        CV => #Processo.Defrost_in_Process_PopUp);
+        
+    END_IF;
+    #Out_Defrostinprocess := #Processo.Defrost_in_Process;
+    #Out_defrostinprocessrotation := #Processo.Defrost_in_Process_PopUp;
+    #Processo.Output_defrostinprocess_rotation := #Processo.Defrost_in_Process_PopUp;
+END_REGION
+REGION Tota time programmed
+    #Processo.Total_time_programmed_Defrost :=  #Processo.Input_Empty_time + #Processo.Input_Time_ofhot_gas +
+    #Processo.Input_Drying_time + #Processo."Input_Pre-cooling_time" + #Processo.Input_Water_time;
+    
+END_REGION
+REGION Visualização do progresso de tempo no SCADA e no PopUp
+    #"Time*60000" := #Processo.Total_time_programmed_Defrost * 60000;
+    #"process runtime"(IN := #Processo.Defrost_in_Process,
+                       PT := #"Time*60000",
+                       ET => #"Time Result-1");
+    
+    #"Time Result-1/1" := #"Time Result-1";
+   
+    #"Time Result-5" := NORM_X(MIN := 0, VALUE := #"Time Result-1/1", MAX := 3600000.0);
+    #OutputTime2 := SCALE_X(MIN := 0, VALUE := #"Time Result-5", MAX := 60.0);
+    #Processo.OutputTime_2 := #OutputTime2;
+    
+    // Recebe Tempo total do processo //
+    #OutputTime1 := #"Time Result-0";
+    #Processo.OutputTime_1 := #OutputTime1;
+    
+    // Visualização do progresso do tempo na Tela PopUp  //
+    #Processo.Time_already_travelled_Defrost := #"Time Result-1";
+    
+    // resultado em porcentagem do tempo percorrido do processo //
+    #"Time Result-0" := #Processo.Total_time_programmed_Defrost;
+    #"Time Result-3" := #"Time Result-0" * 365;
+    #"Time Result-4" := 0.6 * #"Time Result-1/1";
+    #"Time Result-%" := NORM_X(MIN := 0,
+                               VALUE := #"Time Result-4",
+                               MAX := #"Time Result-3");
+    #Processo.ResultTime := #"Time Result-%";
+    
+    // Visualização de tempo na tela da camara //
+    #Time_already_travelled_Defrost := #Processo.Time_already_travelled_Defrost;
+END_REGION
