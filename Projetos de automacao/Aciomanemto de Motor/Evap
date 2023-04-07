@@ -1,19 +1,20 @@
 	
     *******************************************************************************
-    Input									
+    ////////////////////////////////////////////////////////////////////////
+     Input									
 	identName	                |String[30]	''			
 	Fault_DM	                |Bool			Falha no disjuntor motor
-	External_Warning			
+	External_Warning			|Bool
 	Feedback	                |Bool			Feedback de Acionamento / contactor
 
     ////////////////////////////////////////////////////////////////////////
-	Output									
-	Out	Bool			
-	Fault	Bool			
+	 Output									
+	Out	                        |Bool			
+	Fault	                    |Bool			
 	DTL	DTL	DTL#1970-01-01-00:00:00	Non-retain			
 		
     ////////////////////////////////////////////////////////////////////////
-    InOut 								
+     InOut 								
 	MT	"MOTORES"  //BLOCO CRIADA DA UDT PLC data types
          	LOC_REM	            |Bool					
 	        START	            |Bool					
@@ -27,8 +28,9 @@
 	        TIMEOUT 	        |Bool					
 	        TIME	            |DTL					
 	        identName	        |String[30]					Instance Name Identification
-					
-	Static									
+
+	////////////////////////////////////////////////////////////////////////				
+	 Static									
 	Saida-1	                    |Bool			
 	Saida-2	                    |Bool		
 	InEt_0	                    |Time		
@@ -51,15 +53,16 @@
 	Reset-01	                |Bool
 
     //////////////////////////////////////////////////////////////////////// 			
-	Temp						
+	 Temp						
 	tempInt	                    |Int								 Int
 	tempDTL	                    |DTL								 DTL
 	tempIntError	            |Word								 IntError
 
     //////////////////////////////////////////////////////////////////////// 
-	Constant 									
+	 Constant 									
 	ERR_RDSYST	                |Word	16#0001							ERR RDSYST
     *******************************************************************************
+    ///////////////////////////////////////////////////////////////////////////////
 #MT.identName := #identName;
     REGION _Acionamento das Evaporadoras._
              // Acionamento do equipamento utilizando um contador de pulso
