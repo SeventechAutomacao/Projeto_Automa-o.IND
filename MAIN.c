@@ -1,11 +1,9 @@
 /* ============================================================================
 
-    Linguagem C, o curso definitivo
-    M�dulo 5 Aula 3
     break e continue
     
-    Autor: Dr. Eng. Wagner Rambo
-    Data:  Maio de 2021
+    Autor: TIAGO ALVES 
+    Data:  07 de ABRIL de 2023
 
 ============================================================================ */
 
